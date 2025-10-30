@@ -66,7 +66,7 @@
             height: auto;
             /* Se quitan los márgenes de centrado, flex lo maneja */
             margin-left: 20px; /* Espacio para que no se pegue al texto */
-            filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.4)); /* Sombra blanca */
+            /* Se quita el filtro, el nuevo logo ya tiene borde */
         }
 
         h3 {
@@ -231,48 +231,57 @@
 
         /* --- Media Query para Móviles --- */
         @media (max-width: 768px) {
-            body { padding: 10px; }
-            .container { padding: 15px; }
-            h1 { font-size: 2.2em; }
-            h2 { font-size: 1.3em; }
+            body { 
+                padding: 10px; 
+                font-size: 14px; /* Reducir tamaño de fuente base */
+            }
+            .container { padding: 10px; }
+            h1 { font-size: 1.8em; } /* Más pequeño */
+            h2 { font-size: 1.1em; } /* Más pequeño */
             
-            /* Nuevos estilos responsivos */
-            .timeline-entry {
-                flex-direction: column; /* Apila hora y eventos */
-            }
-
-            /* Vuelve a centrar el header en móvil */
-            header {
-                flex-direction: column;
-            }
-            .header-text {
-                text-align: center;
-            }
+            /* Mantener el logo pequeño */
             .logo {
-                margin-left: auto;
-                margin-right: auto;
-                margin-top: 15px;
-            }
-            h2 {
-                margin-bottom: 15px; /* Restaurar margen para el logo */
+                max-width: 80px; /* Aún más pequeño en móvil */
             }
 
-            .timeline-entry .time {
-                min-width: auto; /* Quita el ancho fijo */
-                justify-content: center;
+            /* Reducir padding en la cabecera */
+            header {
+                padding-bottom: 10px;
+            }
+
+            /* Reducir títulos de sección */
+            h3 {
+                font-size: 1.3em;
+            }
+
+            /* Reducir padding de instrucciones y mapa */
+            .instructions, .map-container {
                 padding: 10px;
-                border-radius: 12px 12px 0 0;
             }
-            .events-container {
-                flex-direction: column; /* Apila los eventos */
+
+            /* Ajustes de la línea de tiempo */
+            .timeline-list {
+                gap: 10px; /* Menos espacio entre entradas */
             }
+            
+            .timeline-entry .time {
+                min-width: 60px; /* Más estrecho que el de escritorio (80px) */
+                padding: 10px; /* Menos padding */
+                font-size: 1em; /* Más pequeño */
+            }
+            
             .event {
-                border-left-width: 6px !important; /* Mantener borde de color */
+                padding: 10px 12px; /* Menos padding */
             }
-            .event + .event {
-                border-left-width: 6px !important; /* Anula el separador de 1px */
-                border-top: 1px solid #555; /* Añade separador superior */
+
+            .event .class {
+                font-size: 1em; /* Más pequeño */
             }
+            .event .location {
+                font-size: 0.8em; /* Más pequeño */
+            }
+
+            /* Se eliminan todas las reglas de 'flex-direction: column' */
         }
 
     </style>
@@ -286,7 +295,7 @@
                 <h1>🎃 Cronograma Halloween</h1>
                 <h2>Viernes, 31 de octubre de 2025</h2>
             </div>
-            <!-- LOGO DEL CENTRO --><img src="https://raw.githubusercontent.com/CEIP-Carlos-III/public/refs/heads/main/logocarlosiiiborde.png " alt="Logo CEIP Carlos III" class="logo">
+            <!-- LOGO DEL CENTRO --><img src="https://raw.githubusercontent.com/CEIP-Carlos-III/public/refs/heads/main/logocarlosiiiborde.png" alt="Logo CEIP Carlos III" class="logo">
         </header>
 
         <section class="instructions">
@@ -550,8 +559,8 @@
                 </div>
             </div>
 
-        </div> <!-- /timeline-list --></div> <!-- /container --></body>
+        </div> <!-- /timeline-list -->
+    </div> <!-- /container -->
+</body>
 </html>
-
-
 
