@@ -1,1 +1,557 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cronograma Halloween</title>
+    <!-- Se usa la fuente Inter de Google Fonts --><link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Estilos CSS integrados en el HTML --><style>
+        /* --- Configuración General --- */
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #1a1a1a; /* Fondo oscuro */
+            color: #f0f0f0;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+        }
+
+        /* --- Contenedor Principal --- */
+        .container {
+            max-width: 1000px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #2c2c2c; /* Gris oscuro */
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+            border: 1px solid #444;
+        }
+
+        /* --- Encabezados --- */
+        header {
+            /* Mover de 'text-align: center' a flexbox */
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #ff6600; /* Naranja Halloween */
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+
+        /* Nuevo contenedor para el texto del header */
+        .header-text {
+            text-align: left; /* Alinear el texto a la izquierda */
+        }
+
+        h1 {
+            color: #ff6600;
+            margin: 0;
+            font-size: 2.8em;
+            font-weight: 700;
+        }
+
+        h2 {
+            color: #f0f0f0;
+            margin: 5px 0 0; /* Se quita el margen inferior */
+            font-weight: 400;
+            font-size: 1.5em;
+        }
+
+        /* Estilos del Logo */
+        .logo {
+            max-width: 120px; /* Tamaño máximo del logo reducido */
+            height: auto;
+            /* Se quitan los márgenes de centrado, flex lo maneja */
+            margin-left: 20px; /* Espacio para que no se pegue al texto */
+            filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.4)); /* Sombra blanca */
+        }
+
+        h3 {
+            color: #ff983e; /* Naranja más claro */
+            border-bottom: 1px solid #555;
+            padding-bottom: 8px;
+            margin-top: 40px;
+            font-size: 1.6em;
+        }
+
+        /* --- Sección de Instrucciones --- */
+        .instructions {
+            background-color: #383838;
+            border-left: 5px solid #ff6600;
+            padding: 20px;
+            margin-bottom: 30px;
+            border-radius: 0 12px 12px 0;
+            font-size: 1.05em;
+        }
+
+        .instructions ul {
+            padding-left: 20px;
+            margin: 0;
+        }
+
+        .instructions li {
+            margin-bottom: 10px;
+        }
+
+        .instructions li strong {
+            color: #ffb380; /* Naranja pálido para resaltar */
+        }
+
+        /* FIX: Eliminar el margen superior del H3 dentro de las instrucciones */
+        .instructions h3 {
+            margin-top: 0;
+        }
+
+        /* --- Estilo para el Mapa --- */
+        .map-container {
+            margin-bottom: 30px;
+            background-color: #ddd; /* Fondo gris claro para suavizar el contraste */
+            padding: 10px; /* Espacio entre el borde y la imagen */
+            border-radius: 12px;
+            border: 2px solid #555;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+        }
+        .map-container img {
+            width: 100%;
+            max-width: 100%;
+            height: auto;
+            border-radius: 12px;
+            border: none; /* Borde movido al contenedor */
+            display: block; /* Para centrar y evitar espacios extra */
+        }
+
+        /* --- Colores por Curso (con tonos) --- */
+        /* Infantil: Rosa (a=I3, b=I4, c=I5) */
+        .event.c-infantil-a { border-left-color: #ff69b4; }
+        .event.c-infantil-b { border-left-color: #ff85c1; }
+        .event.c-infantil-c { border-left-color: #ffa2d0; }
+        .c-infantil-a .class { color: #ff69b4; }
+        .c-infantil-b .class { color: #ff85c1; }
+        .c-infantil-c .class { color: #ffa2d0; }
+
+        /* Primero: Azul */
+        .event.c-primero-a { border-left-color: #1e90ff; }
+        .event.c-primero-b { border-left-color: #4ca6ff; }
+        .c-primero-a .class { color: #1e90ff; }
+        .c-primero-b .class { color: #4ca6ff; }
+
+        /* Segundo: Verde */
+        .event.c-segundo-a { border-left-color: #32cd32; }
+        .event.c-segundo-b { border-left-color: #57d757; }
+        .c-segundo-a .class { color: #32cd32; }
+        .c-segundo-b .class { color: #57d757; }
+
+        /* Tercero: Amarillo */
+        .event.c-tercero-a { border-left-color: #ffc107; }
+        .event.c-tercero-b { border-left-color: #ffca3a; }
+        .c-tercero-a .class { color: #ffc107; }
+        .c-tercero-b .class { color: #ffca3a; }
+
+        /* Cuarto: Morado */
+        .event.c-cuarto-a { border-left-color: #9370db; }
+        .event.c-cuarto-b { border-left-color: #a88be2; }
+        .c-cuarto-a .class { color: #9370db; }
+        .c-cuarto-b .class { color: #a88be2; }
+
+        /* Quinto: Naranja Oscuro */
+        .event.c-quinto-a { border-left-color: #ff8c00; }
+        .event.c-quinto-b { border-left-color: #ffa533; }
+        .event.c-quinto-c { border-left-color: #ffbe66; }
+        .c-quinto-a .class { color: #ff8c00; }
+        .c-quinto-b .class { color: #ffa533; }
+        .c-quinto-c .class { color: #ffbe66; }
+
+        /* Sexto: Rojo */
+        .event.c-sexto-a { border-left-color: #e51c23; }
+        .event.c-sexto-b { border-left-color: #eb4f55; }
+        .c-sexto-a .class { color: #e51c23; }
+        .c-sexto-b .class { color: #eb4f55; }
+
+
+        /* --- Nueva Lista de Cronograma --- */
+        .timeline-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        .timeline-entry {
+            display: flex;
+            align-items: stretch; /* Estira los hijos */
+            background-color: #383838;
+            border-radius: 12px;
+            overflow: hidden; /* Para que el borde del evento se vea bien */
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+        .timeline-entry .time {
+            background-color: #ff6600;
+            color: #1a1a1a;
+            font-weight: 700;
+            padding: 20px;
+            font-size: 1.2em;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 80px; /* Ancho fijo para la hora */
+            text-align: center;
+        }
+        .events-container {
+            display: flex;
+            flex-grow: 1;
+            flex-direction: row; /* Por defecto */
+        }
+        .event {
+            flex: 1; /* Ocupa espacio equitativo */
+            padding: 15px 20px;
+            background-color: #444;
+            border-left: 6px solid #666; /* Borde de color */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        /* Separador entre eventos */
+        .event + .event {
+            border-left: 1px solid #555;
+        }
+
+        .event .class {
+            font-size: 1.2em;
+            font-weight: 700;
+        }
+        .event .location {
+            font-size: 0.9em;
+            color: #ccc;
+        }
+        .event.empty .class {
+            color: #888;
+            font-style: italic;
+        }
+
+        /* --- Media Query para Móviles --- */
+        @media (max-width: 768px) {
+            body { padding: 10px; }
+            .container { padding: 15px; }
+            h1 { font-size: 2.2em; }
+            h2 { font-size: 1.3em; }
+            
+            /* Nuevos estilos responsivos */
+            .timeline-entry {
+                flex-direction: column; /* Apila hora y eventos */
+            }
+
+            /* Vuelve a centrar el header en móvil */
+            header {
+                flex-direction: column;
+            }
+            .header-text {
+                text-align: center;
+            }
+            .logo {
+                margin-left: auto;
+                margin-right: auto;
+                margin-top: 15px;
+            }
+            h2 {
+                margin-bottom: 15px; /* Restaurar margen para el logo */
+            }
+
+            .timeline-entry .time {
+                min-width: auto; /* Quita el ancho fijo */
+                justify-content: center;
+                padding: 10px;
+                border-radius: 12px 12px 0 0;
+            }
+            .events-container {
+                flex-direction: column; /* Apila los eventos */
+            }
+            .event {
+                border-left-width: 6px !important; /* Mantener borde de color */
+            }
+            .event + .event {
+                border-left-width: 6px !important; /* Anula el separador de 1px */
+                border-top: 1px solid #555; /* Añade separador superior */
+            }
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <!-- Div extra para agrupar títulos -->
+            <div class="header-text">
+                <h1>🎃 Cronograma Halloween</h1>
+                <h2>Viernes, 31 de octubre de 2025</h2>
+            </div>
+            <!-- LOGO DEL CENTRO --><img src="https://raw.githubusercontent.com/CEIP-Carlos-III/public/refs/heads/main/logocarlosiiiborde.png " alt="Logo CEIP Carlos III" class="logo">
+        </header>
+
+        <section class="instructions">
+            <h3>📝 Instrucciones Importantes</h3>
+            <ul>
+                <li><strong>Puntualidad:</strong> Es <strong>muy importante respetar los tiempos</strong>. A la hora indicada debemos estar en la puerta y a la hora del siguiente grupo, debemos haber salido.</li>
+                <li><strong>Comportamiento:</strong> Indicar al alumnado que <strong>no se toca nada</strong> y que <strong>no se corre</strong>.</li>
+                <li><strong>Voluntario:</strong> No se obliga a ningún alumno/a a entrar; quien no quiera, no tiene que entrar.</li>
+            </ul>
+        </section>
+
+        <h3>🗺️ Plano de Recorridos</h3>
+        <div class="map-container">
+            <img src="https://raw.githubusercontent.com/CEIP-Carlos-III/public/refs/heads/main/halloweenmapa2025.png" alt="Plano de recorridos Halloween 2025"
+                 onerror="this.style.display='none'; this.nextElementSibling.style.display='block';"
+            >
+            <!-- Mensaje de error si la imagen no carga --><div style="display:none; color: #ff6600; text-align: center; padding: 20px; background-color: #383838; border-radius: 12px;">
+                No se ha podido cargar el plano.
+            </div>
+        </div>
+
+        <h3>⏰ Cronograma General</h3>
+        
+        <div class="timeline-list">
+            
+            <!-- 9:30 --><div class="timeline-entry">
+                <div class="time">9:30</div>
+                <div class="events-container">
+                    <div class="event empty">
+                        <span class="class">—</span>
+                        <span class="location">(Pabellón Grande)</span>
+                    </div>
+                    <div class="event c-primero-a">
+                        <span class="class">1ºA</span>
+                        <span class="location">(Pabellón Pequeño)</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 9:45 --><div class="timeline-entry">
+                <div class="time">9:45</div>
+                <div class="events-container">
+                    <div class="event c-quinto-c">
+                        <span class="class">5ºC</span>
+                        <span class="location">(Pabellón Grande)</span>
+                    </div>
+                    <div class="event c-primero-b">
+                        <span class="class">1ºB</span>
+                        <span class="location">(Pabellón Pequeño)</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 9:55 --><div class="timeline-entry">
+                <div class="time">9:55</div>
+                <div class="events-container">
+                    <div class="event c-quinto-a">
+                        <span class="class">5ºA</span>
+                        <span class="location">(Pabellón Grande)</span>
+                    </div>
+                    <div class="event c-quinto-c">
+                        <span class="class">5ºC</span>
+                        <span class="location">(Pabellón Pequeño)</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 10:10 --><div class="timeline-entry">
+                <div class="time">10:10</div>
+                <div class="events-container">
+                    <div class="event c-quinto-b">
+                        <span class="class">5ºB</span>
+                        <span class="location">(Pabellón Grande)</span>
+                    </div>
+                    <div class="event c-quinto-a">
+                        <span class="class">5ºA</span>
+                        <span class="location">(Pabellón Pequeño)</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 10:20 --><div class="timeline-entry">
+                <div class="time">10:20</div>
+                <div class="events-container">
+                    <div class="event c-sexto-a">
+                        <span class="class">6ºA</span>
+                        <span class="location">(Pabellón Grande)</span>
+                    </div>
+                    <div class="event c-quinto-b">
+                        <span class="class">5ºB</span>
+                        <span class="location">(Pabellón Pequeño)</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 10:30 --><div class="timeline-entry">
+                <div class="time">10:30</div>
+                <div class="events-container">
+                    <div class="event c-sexto-b">
+                        <span class="class">6ºB</span>
+                        <span class="location">(Pabellón Grande)</span>
+                    </div>
+                    <div class="event c-sexto-a">
+                        <span class="class">6ºA</span>
+                        <span class="location">(Pabellón Pequeño)</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 10:40 --><div class="timeline-entry">
+                <div class="time">10:40</div>
+                <div class="events-container">
+                    <div class="event c-cuarto-a">
+                        <span class="class">4ºA</span>
+                        <span class="location">(Pabellón Grande)</span>
+                    </div>
+                    <div class="event c-sexto-b">
+                        <span class="class">6ºB</span>
+                        <span class="location">(Pabellón Pequeño)</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 10:50 --><div class="timeline-entry">
+                <div class="time">10:50</div>
+                <div class="events-container">
+                    <div class="event c-cuarto-b">
+                        <span class="class">4ºB</span>
+                        <span class="location">(Pabellón Grande)</span>
+                    </div>
+                    <div class="event c-cuarto-a">
+                        <span class="class">4ºA</span>
+                        <span class="location">(Pabellón Pequeño)</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 11:00 --><div class="timeline-entry">
+                <div class="time">11:00</div>
+                <div class="events-container">
+                    <div class="event c-tercero-a">
+                        <span class="class">3ºA</span>
+                        <span class="location">(Pabellón Grande)</span>
+                    </div>
+                    <div class="event c-cuarto-b">
+                        <span class="class">4ºB</span>
+                        <span class="location">(Pabellón Pequeño)</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 11:15 --><div class="timeline-entry">
+                <div class="time">11:15</div>
+                <div class="events-container">
+                    <div class="event c-tercero-b">
+                        <span class="class">3ºB</span>
+                        <span class="location">(Pabellón Grande)</span>
+                    </div>
+                    <div class="event c-tercero-a">
+                        <span class="class">3ºA</span>
+                        <span class="location">(Pabellón Pequeño)</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 11:25 --><div class="timeline-entry">
+                <div class="time">11:25</div>
+                <div class="events-container">
+                    <div class="event empty">
+                        <span class="class">—</span>
+                        <span class="location">(Pabellón Grande)</span>
+                    </div>
+                    <div class="event c-tercero-b">
+                        <span class="class">3ºB</span>
+                        <span class="location">(Pabellón Pequeño)</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 12:00 --><div class="timeline-entry">
+                <div class="time">12:00</div>
+                <div class="events-container">
+                     <div class="event empty">
+                        <span class="class">—</span>
+                        <span class="location">(Pabellón Grande)</span>
+                    </div>
+                    <div class="event c-segundo-a">
+                        <span class="class">2ºA</span>
+                        <span class="location">(Pabellón Pequeño)</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 12:15 --><div class="timeline-entry">
+                <div class="time">12:15</div>
+                <div class="events-container">
+                     <div class="event empty">
+                        <span class="class">—</span>
+                        <span class="location">(Pabellón Grande)</span>
+                    </div>
+                    <div class="event c-segundo-b">
+                        <span class="class">2ºB</span>
+                        <span class="location">(Pabellón Pequeño)</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 12:30 --><div class="timeline-entry">
+                <div class="time">12:30</div>
+                <div class="events-container">
+                     <div class="event empty">
+                        <span class="class">—</span>
+                        <span class="location">(Pabellón Grande)</span>
+                    </div>
+                    <div class="event c-infantil-a">
+                        <span class="class">I3A / I3B</span>
+                        <span class="location">(Pabellón Pequeño)</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 12:45 --><div class="timeline-entry">
+                <div class="time">12:45</div>
+                <div class="events-container">
+                     <div class="event empty">
+                        <span class="class">—</span>
+                        <span class="location">(Pabellón Grande)</span>
+                    </div>
+                    <div class="event c-infantil-b">
+                        <span class="class">I4A / I4B</span>
+                        <span class="location">(Pabellón Pequeño)</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 13:00 --><div class="timeline-entry">
+                <div class="time">13:00</div>
+                <div class="events-container">
+                     <div class="event empty">
+                        <span class="class">—</span>
+                        <span class="location">(Pabellón Grande)</span>
+                    </div>
+                    <div class="event c-infantil-b">
+                        <span class="class">I4C / I5A</span>
+                        <span class="location">(Pabellón Pequeño)</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 13:15 --><div class="timeline-entry">
+                <div class="time">13:15</div>
+                <div class="events-container">
+                     <div class="event empty">
+                        <span class="class">—</span>
+                        <span class="location">(Pabellón Grande)</span>
+                    </div>
+                    <div class="event c-infantil-c">
+                        <span class="class">I5B / I5C</span>
+                        <span class="location">(Pabellón Pequeño)</span>
+                    </div>
+                </div>
+            </div>
+
+        </div> <!-- /timeline-list --></div> <!-- /container --></body>
+</html>
+
+
 
