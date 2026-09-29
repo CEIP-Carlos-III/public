@@ -65,7 +65,7 @@
   <span class="sep"></span>
   <button id="zout" class="hm" title="Alejar (−)"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M8 11h6M20 20l-4-4"/></svg></button>
   <button id="zin" class="hm" title="Acercar (+)"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M8 11h6M11 8v6M20 20l-4-4"/></svg></button>
-  <button id="fit" title="Ajustar (0)"><svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
+  <button id="fit" title="Ajustar a la pantalla (0)"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><rect x="8" y="8.5" width="6" height="5" rx=".5"/><path d="M20 20l-4-4"/></svg></button>
   <button id="full" title="Pantalla completa (F)"><svg viewBox="0 0 24 24"><path d="M9 4H4v5M15 4h5v5M9 20H4v-5M15 20h5v-5"/></svg></button>
 </div>
 <script>
@@ -307,6 +307,13 @@
   $('zin').onclick = function () { animated(function () { zoomAt(S.z * 1.5, 0, 0); }); };
   $('zout').onclick = function () { animated(function () { zoomAt(S.z / 1.5, 0, 0); }); };
   $('fit').onclick = function () { animated(function () { S.z = 1; S.x = S.y = 0; apply(); }); };
+  var FS_IN = '<svg viewBox="0 0 24 24"><path d="M9 4H4v5M15 4h5v5M9 20H4v-5M15 20h5v-5"/></svg>',
+      FS_OUT = '<svg viewBox="0 0 24 24"><path d="M4 9h5V4M20 9h-5V4M4 15h5v5M20 15h-5v5"/></svg>';
+  function fsIcon() {
+    var on = !!(document.fullscreenElement || document.webkitFullscreenElement);
+    $('full').innerHTML = on ? FS_OUT : FS_IN; $('full').title = on ? 'Salir de pantalla completa (F)' : 'Pantalla completa (F)';
+  }
+  document.addEventListener('fullscreenchange', fsIcon); document.addEventListener('webkitfullscreenchange', fsIcon);
   $('full').onclick = function () {
     var d = document, el = d.documentElement;
     if (d.fullscreenElement || d.webkitFullscreenElement) (d.exitFullscreen || d.webkitExitFullscreen).call(d);
