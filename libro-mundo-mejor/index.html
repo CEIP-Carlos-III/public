@@ -7,27 +7,32 @@
 <meta name="description" content="Lector del libro «Cómo crear un mundo mejor»: una o dos páginas, zoom y giro.">
 <link rel="icon" href="../logocarlosiii.png">
 <style>
-  :root { --bg:#1e2126; --bar:rgba(20,22,26,.92); --fg:#eef0f3; --muted:#9aa3ad; --acc:#f5c518; }
+  :root { --bg:#1e2126; --bar:rgba(20,22,26,.92); --fg:#eef0f3; --muted:#9aa3ad; --acc:#f5c518; --paper:#f4f0e6; }
   * { box-sizing:border-box; }
   html, body { margin:0; height:100%; background:var(--bg); color:var(--fg);
     font:15px/1.3 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; overflow:hidden; }
-  #stage { position:fixed; inset:0 0 56px 0; overflow:hidden; touch-action:none; cursor:grab; user-select:none; -webkit-user-select:none; }
-  #stage.drag { cursor:grabbing; }
-  #book { position:absolute; display:flex; transform-origin:50% 50%; box-shadow:0 8px 40px rgba(0,0,0,.55); background:#fff; }
+  #stage { position:fixed; inset:0 0 56px 0; overflow:hidden; touch-action:none; user-select:none; -webkit-user-select:none; }
+  #stage.pan { cursor:grab; } #stage.drag { cursor:grabbing; }
+  #book { position:absolute; transform-origin:50% 50%; }
   #book.anim { transition:transform .32s cubic-bezier(.2,.7,.2,1); }
   #book.moving { will-change:transform; }
-  #book .pg { flex:1 1 0; height:100%; position:relative; overflow:hidden; background:#fff; }
+  #book .pg { position:absolute; top:0; height:100%; overflow:hidden; background:#fff; }
+  #book .slot, #under { box-shadow:0 8px 30px rgba(0,0,0,.5); }
   #book img { display:block; width:100%; height:100%; object-fit:fill; pointer-events:none; -webkit-user-drag:none; }
-  #book.two .pg:first-child::after, #book.two .pg:last-child::after { content:""; position:absolute; top:0; bottom:0; width:6%; pointer-events:none; }
-  #book.two .pg:first-child::after { right:0; background:linear-gradient(to left, rgba(0,0,0,.22), transparent); }
-  #book.two .pg:last-child::after { left:0; background:linear-gradient(to right, rgba(0,0,0,.18), transparent); }
-  #book:not(.two) .pg + .pg { display:none; }
+  #book .paper { background:var(--paper); } #book .paper img { visibility:hidden; }
+  #under { z-index:1; } #book .slot { z-index:2; } #fsheet { z-index:3; }
+  #gutter { position:absolute; top:0; height:100%; z-index:4; pointer-events:none;
+    background:linear-gradient(to right, transparent, rgba(0,0,0,.2) 46%, rgba(0,0,0,.28) 50%, rgba(0,0,0,.16) 54%, transparent); }
+  .clip { position:absolute; left:0; top:0; width:100%; height:100%; pointer-events:none; overflow:visible; }
+  .clip > i { position:absolute; display:block; }
+  #shadeU { z-index:5; } #shadeF { z-index:6; } #backWrap { z-index:7; } #shadeB { z-index:8; }
+  #back { transform-origin:0 0; }
+  .fl { display:none; } #book.flip .fl { display:block; }
   #bar { position:fixed; left:0; right:0; bottom:0; height:56px; background:var(--bar); display:flex; align-items:center;
     gap:4px; padding:0 8px; border-top:1px solid rgba(255,255,255,.08); }
   #bar button { flex:none; width:40px; height:40px; border:0; border-radius:10px; background:transparent; color:var(--fg);
     display:grid; place-items:center; cursor:pointer; font:600 13px system-ui; }
   #bar button:hover { background:rgba(255,255,255,.1); }
-  #bar button.on { color:var(--acc); }
   #bar svg { width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
   #slider { flex:1 1 auto; min-width:40px; accent-color:var(--acc); }
   #lbl { flex:none; min-width:84px; text-align:center; font-variant-numeric:tabular-nums; color:var(--muted); font-size:13px; }
@@ -38,7 +43,16 @@
 </style>
 </head>
 <body>
-<div id="stage"><div id="book"><div class="pg"><img id="a" alt=""></div><div class="pg"><img id="b" alt=""></div></div></div>
+<div id="stage"><div id="book">
+  <div class="pg fl" id="under"><img alt=""></div>
+  <div class="pg slot"><img alt=""></div><div class="pg slot"><img alt=""></div>
+  <div class="pg fl" id="fsheet"><img alt=""></div>
+  <div id="gutter"></div>
+  <div class="clip fl" id="shadeU"><i></i></div>
+  <div class="clip fl" id="shadeF"><i></i></div>
+  <div class="clip fl" id="backWrap"><div class="pg" id="back"><img alt=""></div></div>
+  <div class="clip fl" id="shadeB"><i></i></div>
+</div></div>
 <div id="bar">
   <button id="prev" title="Anterior (←)"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>
   <span id="lbl"></span>
@@ -60,14 +74,17 @@
   var N = 97, LAST = N - 1, AR = 1190 / 1548;          // todas las páginas se estiran a esta proporción
   var ZMIN = 1, ZMAX = 6;
   var $ = function (id) { return document.getElementById(id); };
-  var stage = $('stage'), book = $('book'), imA = $('a'), imB = $('b'), slider = $('slider'), lbl = $('lbl');
+  var stage = $('stage'), book = $('book'), slider = $('slider'), lbl = $('lbl');
+  var slots = book.querySelectorAll('.slot');
+  var under = $('under'), fsheet = $('fsheet'), back = $('back'), backWrap = $('backWrap'), gutter = $('gutter');
+  var shadeU = $('shadeU'), shadeF = $('shadeF'), shadeB = $('shadeB');
   var src = function (i) { return 'p' + String(i).padStart(3, '0') + '.webp'; };
 
   var S = { two: innerWidth > innerHeight, page: 0, rot: 0, z: 1, x: 0, y: 0 };
   try { var sv = JSON.parse(localStorage.getItem('libro-mm') || 'null'); if (sv) { S.two = !!sv.two; S.page = sv.page | 0; S.rot = sv.rot | 0; } } catch (e) {}
   var hp = /p=(\d+)/.exec(location.hash); if (hp) S.page = +hp[1];
   S.page = Math.max(0, Math.min(LAST, S.page));
-  var fit = 1, vw = 0, vh = 0;
+  var fit = 1, vw = 0, vh = 0, pw = 1, H = 1, n = 1;
 
   // ---- Páginas ----
   function pages(p) {
@@ -83,26 +100,24 @@
     return cache[i];
   }
   var tok = 0;
-  function show(p, keepView) {
+  function show(p, keepView, done) {
     S.page = p = Math.max(0, Math.min(LAST, p));
     var ps = pages(p), t = ++tok;
     Promise.all(ps.map(load)).then(function (u) {
       if (t !== tok) return;
-      imA.src = u[0]; if (u[1]) imB.src = u[1];
-      book.classList.toggle('two', ps.length === 2);
+      n = ps.length;
+      slots[0].firstChild.src = u[0];
+      if (u[1]) slots[1].firstChild.src = u[1];
+      slots[1].style.display = n === 2 ? '' : 'none';
+      gutter.style.display = n === 2 ? '' : 'none';
       if (!keepView) { S.z = 1; S.x = S.y = 0; }
+      if (done) done();
       layout();
     });
     lbl.textContent = p === 0 ? 'Portada' : 'Pág. ' + ps.map(function (i) { return i + 1; }).join('–');
     slider.value = p;
     for (var d = 1; d <= 4; d++) { load(p + d); load(p - d); }   // precarga alrededor
     save();
-  }
-  function step(dir) {
-    var ps = pages(S.page), n;
-    if (dir > 0) n = ps[ps.length - 1] + 1; else n = ps[0] - 1;
-    if (n < 0 || n > LAST) return;
-    show(S.two ? pages(n)[0] : n);
   }
   function save() {
     try { localStorage.setItem('libro-mm', JSON.stringify({ two: S.two, page: S.page, rot: S.rot })); } catch (e) {}
@@ -113,15 +128,18 @@
   function quarter() { return (((S.rot / 90) % 2) + 2) % 2 === 1; }
   function layout() {
     vw = stage.clientWidth; vh = stage.clientHeight;
-    var n = book.classList.contains('two') ? 2 : 1, w = n * AR, h = 1;
-    var bw = quarter() ? h : w, bh = quarter() ? w : h;
+    var w = n * AR, bw = quarter() ? 1 : w, bh = quarter() ? w : 1;
     fit = Math.min(vw * 0.96 / bw, vh * 0.96 / bh);
-    book.style.width = w * fit + 'px'; book.style.height = h * fit + 'px';
-    book.style.left = (vw - w * fit) / 2 + 'px'; book.style.top = (vh - h * fit) / 2 + 'px';
+    H = fit; pw = AR * fit;
+    book.style.width = n * pw + 'px'; book.style.height = H + 'px';
+    book.style.left = (vw - n * pw) / 2 + 'px'; book.style.top = (vh - H) / 2 + 'px';
+    [slots[0], slots[1], under, fsheet, back].forEach(function (el) { el.style.width = pw + 'px'; });
+    slots[1].style.left = pw + 'px';
+    gutter.style.left = pw * 0.94 + 'px'; gutter.style.width = pw * 0.12 + 'px';
     apply();
   }
   function clamp() {
-    var n = book.classList.contains('two') ? 2 : 1, w = n * AR * fit * S.z, h = fit * S.z;
+    var w = n * pw * S.z, h = H * S.z;
     if (quarter()) { var t = w; w = h; h = t; }
     var mx = Math.max(0, (w - vw) / 2 + 20), my = Math.max(0, (h - vh) / 2 + 20);
     if (S.z <= 1) mx = my = 0;
@@ -130,6 +148,7 @@
   function apply() {
     clamp();
     book.style.transform = 'translate(' + S.x + 'px,' + S.y + 'px) rotate(' + S.rot + 'deg) scale(' + S.z + ')';
+    stage.classList.toggle('pan', S.z > 1);
   }
   function zoomAt(z, cx, cy) {             // cx, cy relativos al centro del escenario
     z = Math.max(ZMIN, Math.min(ZMAX, z));
@@ -141,18 +160,147 @@
   }
   var movingT;
   function moving() { book.classList.add('moving'); clearTimeout(movingT); movingT = setTimeout(function () { book.classList.remove('moving'); }, 200); }
+  function rel(e) { var r = stage.getBoundingClientRect(); return [e.clientX - r.left - vw / 2, e.clientY - r.top - vh / 2]; }
+  function toLocal(e) {                    // punto de pantalla -> coordenadas del libro (sin giro ni zoom)
+    var c = rel(e), a = -S.rot * Math.PI / 180, dx = c[0] - S.x, dy = c[1] - S.y;
+    return { x: (dx * Math.cos(a) - dy * Math.sin(a)) / S.z + n * pw / 2, y: (dx * Math.sin(a) + dy * Math.cos(a)) / S.z + H / 2 };
+  }
+
+  // ---- Paso de hoja con pliegue ----
+  // Hoja articulada en x = h; la esquina C sigue al punto P. La línea de pliegue es la mediatriz de CP.
+  var F = null;
+  function clipHalf(poly, M, u, keep) {    // keep = +1: lado de C; -1: lado de P
+    var out = [], side = function (p) { return ((p.x - M.x) * u.x + (p.y - M.y) * u.y) * keep; };
+    for (var i = 0; i < poly.length; i++) {
+      var a = poly[i], b = poly[(i + 1) % poly.length], sa = side(a), sb = side(b);
+      if (sa >= 0) out.push(a);
+      if ((sa >= 0) !== (sb >= 0)) { var t = sa / (sa - sb); out.push({ x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t }); }
+    }
+    return out;
+  }
+  function poly(pts, ox) {
+    if (pts.length < 3) return 'polygon(0 0,0 0,0 0)';
+    return 'polygon(' + pts.map(function (p) { return (p.x - ox).toFixed(1) + 'px ' + p.y.toFixed(1) + 'px'; }).join(',') + ')';
+  }
+  function setImg(el, i) {
+    el.classList.toggle('paper', i == null);
+    if (i != null) { var im = el.firstChild; im.src = src(i); }
+  }
+  function flipSetup(dir, y) {
+    if (F || dir > 0 && S.page >= LAST || dir < 0 && S.page <= 0) return null;
+    var ps = pages(S.page), f = { dir: dir, hide: null, under: null, ux: 0 };
+    if (n === 2 && dir > 0) {                              // doble, adelante: gira la hoja derecha
+      var nx = pages(ps[1] + 1);
+      f.h = pw; f.x0 = pw; f.front = ps[1]; f.hide = 1; f.back = nx[0]; f.under = nx[1]; f.ux = pw;
+      f.C = { x: 2 * pw, y: y }; f.to = nx[0];
+    } else if (n === 2 && dir < 0) {                       // doble, atrás: gira la hoja izquierda
+      var pv = pages(ps[0] - 1);
+      f.h = pw; f.x0 = 0; f.front = ps[0]; f.hide = 0; f.back = pv[pv.length - 1]; f.under = pv.length === 2 ? pv[0] : null;
+      f.C = { x: 0, y: y }; f.to = pv[0];
+    } else if (dir > 0) {                                  // una página (o portada), adelante
+      var to = S.two ? pages(S.page + 1)[0] : S.page + 1;
+      f.h = 0; f.x0 = 0; f.front = S.page; f.hide = 0; f.back = null; f.under = to; f.C = { x: pw, y: y }; f.to = to;
+    } else {                                               // una página, atrás: la anterior vuelve desde la izquierda
+      f.h = 0; f.x0 = 0; f.front = S.page - 1; f.back = null; f.C = { x: pw, y: y }; f.to = S.page - 1; f.rev = true;
+    }
+    f.k = n === 2 ? 1 : 2;
+    f.M = { x: 2 * f.h - f.C.x, y: y };                    // posición de la esquina con la hoja ya pasada
+    f.P0 = f.rev ? f.M : f.C; f.P1 = f.rev ? f.C : f.M;
+    f.P = { x: f.P0.x, y: f.P0.y };
+    f.bx = 2 * f.h - (f.x0 + pw);
+    setImg(fsheet, f.front); fsheet.style.left = f.x0 + 'px';
+    setImg(back, f.back); back.style.left = f.bx + 'px';
+    under.style.visibility = f.under == null ? 'hidden' : '';
+    if (f.under != null) { setImg(under, f.under); under.style.left = f.ux + 'px'; }
+    if (f.hide != null) slots[f.hide].style.visibility = 'hidden';
+    F = f; book.classList.add('flip'); renderFlip();
+    return f;
+  }
+  function constrain(P) {
+    [{ x: F.h, y: 0 }, { x: F.h, y: H }].forEach(function (A) {
+      var r = Math.hypot(F.C.x - A.x, F.C.y - A.y), dx = P.x - A.x, dy = P.y - A.y, d = Math.hypot(dx, dy);
+      if (d > r) { P.x = A.x + dx * r / d; P.y = A.y + dy * r / d; }
+    });
+    return P;
+  }
+  function band(wrap, pts, M, u, stops) {
+    var D = Math.hypot(n * pw, H) * 2, i = wrap.firstChild;
+    wrap.style.clipPath = poly(pts, 0);
+    i.style.left = M.x - D + 'px'; i.style.top = M.y - D + 'px'; i.style.width = i.style.height = 2 * D + 'px';
+    i.style.transform = 'rotate(' + Math.atan2(u.y, u.x) + 'rad)';
+    i.style.background = 'linear-gradient(to right,' + stops.map(function (s) { return s[0] + ' ' + (D + s[1]) + 'px'; }).join(',') + ')';
+  }
+  function renderFlip() {
+    var C = F.C, P = F.P, dx = C.x - P.x, dy = C.y - P.y, len = Math.hypot(dx, dy);
+    var rect = [{ x: F.x0, y: 0 }, { x: F.x0 + pw, y: 0 }, { x: F.x0 + pw, y: H }, { x: F.x0, y: H }];
+    if (len < 0.5) {
+      fsheet.style.clipPath = 'none'; backWrap.style.visibility = shadeU.style.visibility = shadeF.style.visibility = shadeB.style.visibility = 'hidden';
+      return;
+    }
+    backWrap.style.visibility = shadeU.style.visibility = shadeF.style.visibility = shadeB.style.visibility = '';
+    var u = { x: dx / len, y: dy / len }, M = { x: (C.x + P.x) / 2, y: (C.y + P.y) / 2 };
+    var front = clipHalf(rect, M, u, -1), fold = clipHalf(rect, M, u, 1);
+    var md = M.x * u.x + M.y * u.y;
+    var refl = function (p) { var s = 2 * (p.x * u.x + p.y * u.y - md); return { x: p.x - s * u.x, y: p.y - s * u.y }; };
+    var flap = fold.map(refl);
+    fsheet.style.clipPath = poly(front, F.x0);
+    // Cara trasera: reflejo en la bisagra y luego en la línea de pliegue
+    var a = -(1 - 2 * u.x * u.x), b = 2 * u.x * u.y, c = -2 * u.x * u.y, d = 1 - 2 * u.y * u.y;
+    var o = refl({ x: 2 * F.h - F.bx, y: 0 });
+    back.style.transform = 'matrix(' + [a, b, c, d, o.x - F.bx, o.y].map(function (v) { return v.toFixed(4); }).join(',') + ')';
+    back.style.clipPath = poly(fold.map(function (p) { return { x: 2 * F.h - p.x, y: p.y }; }), F.bx);
+    var prog = Math.min(1, Math.abs(P.x - F.C.x) / Math.abs(F.M.x - F.C.x || 1));
+    var al = 0.45 * Math.min(1, prog * 5, (1 - prog) * 5 + 0.15), sw = pw * (0.08 + 0.25 * Math.min(prog, 1 - prog));
+    var fade = n === 1 ? Math.min(1, Math.abs(P.x - F.M.x) / (0.6 * pw)) : 1;   // en una página, la hoja pasada se desvanece
+    backWrap.style.opacity = shadeB.style.opacity = fade.toFixed(3);
+    backWrap.style.filter = 'drop-shadow(0 0 ' + (6 + 10 * al).toFixed(1) + 'px rgba(0,0,0,' + (al * 0.8).toFixed(2) + '))';
+    band(shadeU, fold, M, u, [['rgba(0,0,0,' + al.toFixed(2) + ')', 0], ['rgba(0,0,0,0)', sw]]);
+    band(shadeF, front, M, u, [['rgba(0,0,0,0)', -sw * 0.6], ['rgba(0,0,0,' + (al * 0.5).toFixed(2) + ')', 0]]);
+    band(shadeB, flap, M, u, [['rgba(0,0,0,0)', -sw * 1.4], ['rgba(255,255,255,.22)', -sw * 0.35], ['rgba(0,0,0,' + (al * 0.6).toFixed(2) + ')', 0]]);
+  }
+  function endFlip() {
+    book.classList.remove('flip');
+    slots[0].style.visibility = slots[1].style.visibility = '';
+    F = null;
+  }
+  function animateFlip(target, ms, arc, done) {
+    var f = F, from = { x: f.P.x, y: f.P.y }, t0 = performance.now();
+    cancelAnimationFrame(f.raf); f.busy = true;
+    (function tick(now) {
+      if (F !== f) return;
+      var t = Math.min(1, (now - t0) / ms), e = 1 - Math.pow(1 - t, 3);
+      f.P = { x: from.x + (target.x - from.x) * e, y: from.y + (target.y - from.y) * e - arc * Math.sin(Math.PI * t) };
+      renderFlip();
+      if (t < 1) f.raf = requestAnimationFrame(tick); else done();
+    })(t0);
+  }
+  function finish(complete) {
+    var f = F, target = complete ? f.P1 : f.P0;
+    var ms = 180 + 380 * Math.abs(target.x - f.P.x) / Math.abs(f.P1.x - f.P0.x || 1);
+    animateFlip(target, ms, 0, function () {
+      if (complete) show(f.to, true, endFlip); else endFlip();
+    });
+  }
+  function turn(dir) {                                     // botones y teclado: hoja animada desde la esquina inferior
+    if (F) return;
+    var f = flipSetup(dir, H);
+    if (!f) return;
+    animateFlip(f.P1, 650, H * 0.18, function () { show(f.to, true, endFlip); });
+  }
 
   // ---- Controles ----
+  function cancelFlip() { if (F) { cancelAnimationFrame(F.raf); endFlip(); } }
   function setMode(two) {
+    cancelFlip();
     S.two = two;
     $('mode').innerHTML = two
       ? '<svg viewBox="0 0 24 24"><rect x="3" y="5" width="8" height="14" rx="1"/><rect x="13" y="5" width="8" height="14" rx="1"/></svg>'
       : '<svg viewBox="0 0 24 24"><rect x="7" y="4" width="10" height="16" rx="1"/></svg>';
-    show(S.page);
+    show(S.page, true);
   }
-  function rotate(d) { animated(function () { S.rot += d; S.x = S.y = 0; layout(); }); save(); }
-  $('prev').onclick = function () { step(-1); };
-  $('next').onclick = function () { step(1); };
+  function rotate(d) { cancelFlip(); animated(function () { S.rot += d; S.x = S.y = 0; layout(); }); save(); }
+  $('prev').onclick = function () { turn(-1); };
+  $('next').onclick = function () { turn(1); };
   $('mode').onclick = function () { setMode(!S.two); };
   $('rotl').onclick = function () { rotate(-90); };
   $('rotr').onclick = function () { rotate(90); };
@@ -164,14 +312,14 @@
     if (d.fullscreenElement || d.webkitFullscreenElement) (d.exitFullscreen || d.webkitExitFullscreen).call(d);
     else if (el.requestFullscreen || el.webkitRequestFullscreen) (el.requestFullscreen || el.webkitRequestFullscreen).call(el);
   };
-  slider.oninput = function () { show(+slider.value); };
+  slider.oninput = function () { cancelFlip(); show(+slider.value); };
   addEventListener('keydown', function (e) {
     if (e.target === slider && /Arrow/.test(e.key)) return;
     var k = e.key;
-    if (k === 'ArrowRight' || k === 'PageDown' || k === ' ') step(1);
-    else if (k === 'ArrowLeft' || k === 'PageUp') step(-1);
-    else if (k === 'Home') show(0);
-    else if (k === 'End') show(LAST);
+    if (k === 'ArrowRight' || k === 'PageDown' || k === ' ') turn(1);
+    else if (k === 'ArrowLeft' || k === 'PageUp') turn(-1);
+    else if (k === 'Home') { cancelFlip(); show(0); }
+    else if (k === 'End') { cancelFlip(); show(LAST); }
     else if (k === '+' || k === '=') $('zin').onclick();
     else if (k === '-') $('zout').onclick();
     else if (k === '0') $('fit').onclick();
@@ -182,25 +330,46 @@
     else return;
     e.preventDefault();
   });
-  addEventListener('resize', function () { layout(); });
+  addEventListener('resize', function () { cancelFlip(); layout(); });
 
-  // ---- Gestos: arrastrar, pellizcar, deslizar, rueda, doble toque ----
-  var P = new Map(), g = null, lastTap = 0;
-  function rel(e) { var r = stage.getBoundingClientRect(); return [e.clientX - r.left - vw / 2, e.clientY - r.top - vh / 2]; }
+  // ---- Gestos: esquinas/laterales para pasar hoja; arrastrar, pellizcar, rueda, doble toque ----
+  var Pt = new Map(), g = null, lastTap = 0;
+  function edgeDir(L) {
+    var W = n * pw, zone = Math.max(pw * 0.14, 40 / S.z), m = 24 / S.z;
+    if (L.y < -m || L.y > H + m) return 0;
+    if (L.x > W - zone && L.x < W + m) return 1;
+    if (L.x < zone && L.x > -m) return -1;
+    return 0;
+  }
   stage.addEventListener('pointerdown', function (e) {
-    stage.setPointerCapture(e.pointerId); P.set(e.pointerId, [e.clientX, e.clientY]);
-    book.classList.remove('anim'); stage.classList.add('drag');
-    if (P.size === 1) g = { x0: e.clientX, y0: e.clientY, px: S.x, py: S.y, t: Date.now(), moved: false };
-    else if (P.size === 2) {
-      var v = Array.from(P.values());
+    stage.setPointerCapture(e.pointerId); Pt.set(e.pointerId, [e.clientX, e.clientY]);
+    book.classList.remove('anim');
+    if (Pt.size === 1) {
+      var L = toLocal(e), dir = F ? 0 : edgeDir(L);
+      var f = dir && flipSetup(dir, Math.max(0, Math.min(H, L.y)));
+      if (f) g = { flip: f, L0: L, t: Date.now(), moved: false, vx: 0, lx: L.x, lt: Date.now() };
+      else { g = { x0: e.clientX, y0: e.clientY, px: S.x, py: S.y, t: Date.now(), moved: false }; if (S.z > 1) stage.classList.add('drag'); }
+    } else if (Pt.size === 2) {
+      if (g && g.flip && F === g.flip) finish(false);
+      var v = Array.from(Pt.values());
       g = { pinch: true, d0: Math.hypot(v[0][0] - v[1][0], v[0][1] - v[1][1]), z0: S.z, moved: true };
     }
   });
   stage.addEventListener('pointermove', function (e) {
-    if (!P.has(e.pointerId) || !g) return;
-    P.set(e.pointerId, [e.clientX, e.clientY]); moving();
-    if (g.pinch && P.size === 2) {
-      var v = Array.from(P.values()), r = stage.getBoundingClientRect();
+    if (!Pt.has(e.pointerId) || !g) return;
+    Pt.set(e.pointerId, [e.clientX, e.clientY]);
+    if (g.flip) {
+      if (F !== g.flip || F.busy) return;
+      var L = toLocal(e), now = Date.now();
+      if (Math.abs(L.x - g.L0.x) + Math.abs(L.y - g.L0.y) > 4) g.moved = true;
+      g.vx = 0.7 * g.vx + 0.3 * (L.x - g.lx) / Math.max(1, now - g.lt); g.lx = L.x; g.lt = now;
+      F.P = constrain({ x: F.P0.x + (L.x - g.L0.x) * F.k, y: F.P0.y + (L.y - g.L0.y) });
+      renderFlip();
+      return;
+    }
+    moving();
+    if (g.pinch && Pt.size === 2) {
+      var v = Array.from(Pt.values()), r = stage.getBoundingClientRect();
       var d = Math.hypot(v[0][0] - v[1][0], v[0][1] - v[1][1]);
       var mx = (v[0][0] + v[1][0]) / 2 - r.left - vw / 2, my = (v[0][1] + v[1][1]) / 2 - r.top - vh / 2;
       if (g.mx !== undefined) { S.x += mx - g.mx; S.y += my - g.my; }
@@ -213,31 +382,39 @@
     }
   });
   function up(e) {
-    if (!P.has(e.pointerId)) return;
-    P.delete(e.pointerId); stage.classList.remove('drag');
+    if (!Pt.has(e.pointerId)) return;
+    Pt.delete(e.pointerId); stage.classList.remove('drag');
     if (!g) return;
-    if (g.pinch) { if (P.size === 0) g = null; else g = { x0: 0, y0: 0, px: S.x, py: S.y, t: 0, moved: true, dead: true }; return; }
-    if (g.dead) { g = null; return; }
-    var dx = e.clientX - g.x0, dy = e.clientY - g.y0, dt = Date.now() - g.t;
-    if (S.z <= 1 && g.moved && Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.3) step(dx < 0 ? 1 : -1);
-    else if (!g.moved && dt < 300) {
-      var now = Date.now(), c = rel(e);
-      if (now - lastTap < 300) {                       // doble toque: acercar / ajustar
-        clearTimeout(up.t); lastTap = 0;
-        animated(function () { if (S.z > 1.05) { S.z = 1; S.x = S.y = 0; apply(); } else zoomAt(2.5, c[0], c[1]); });
-      } else {
-        lastTap = now;
-        if (S.z <= 1) up.t = setTimeout(function () {    // toque simple en los bordes: pasar página
-          if (c[0] < -vw / 6) step(-1); else if (c[0] > vw / 6) step(1);
-        }, 280);
+    if (g.flip) {
+      var gg = g, f = g.flip; g = null;
+      if (F !== f || f.busy) return;
+      if (e.type === 'pointercancel') { finish(false); return; }
+      if (!gg.moved) {                                     // toque en el borde: la hoja pasa sola
+        animateFlip(f.P1, 650, (f.C.y > H / 2 ? 1 : -1) * H * 0.15, function () { show(f.to, true, endFlip); });
+        return;
       }
+      var s = Math.sign(f.P1.x - f.P0.x), done = Math.abs(f.P.x - f.P1.x) < Math.abs(f.P.x - f.P0.x);
+      if (s * gg.vx > 0.35) done = true; else if (s * gg.vx < -0.35) done = false;
+      finish(done);
+      return;
+    }
+    if (g.pinch) { if (Pt.size === 0) g = null; else g = { dead: true }; return; }
+    if (g.dead) { g = null; return; }
+    var dt = Date.now() - g.t;
+    if (!g.moved && dt < 300) {                          // doble toque: acercar / ajustar
+      var now = Date.now(), c = rel(e);
+      if (now - lastTap < 300) {
+        lastTap = 0;
+        animated(function () { if (S.z > 1.05) { S.z = 1; S.x = S.y = 0; apply(); } else zoomAt(2.5, c[0], c[1]); });
+      } else lastTap = now;
     }
     g = null;
   }
   stage.addEventListener('pointerup', up);
   stage.addEventListener('pointercancel', up);
   stage.addEventListener('wheel', function (e) {
-    e.preventDefault(); book.classList.remove('anim'); moving();
+    e.preventDefault(); if (F) return;
+    book.classList.remove('anim'); moving();
     var c = rel(e);
     zoomAt(S.z * Math.exp(-e.deltaY * (e.ctrlKey ? 0.01 : 0.0015)), c[0], c[1]);
   }, { passive: false });
